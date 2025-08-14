@@ -5,9 +5,13 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import { BackButton } from '@/components/BackButton';
+import { FuturisticButton } from '@/components/FuturisticButton';
+import { ProfileButton } from '@/components/ProfileButton';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { VoiceAmplitude } from '@/components/VoiceAmplitude';
 
 type InterviewStatus = 'ready' | 'recording' | 'thinking' | 'responding' | 'completed';
 
@@ -146,9 +150,12 @@ useEffect(() => {
 
   return (
     <LinearGradient
-      colors={['#1a2a6c', '#b21f1f', '#fdbb2d']}
+      colors={['#1a1b1e', '#2b2c30']}
       style={styles.container}
     >
+      <BackButton />
+      <ProfileButton />
+      
       <ThemedView style={styles.header}>
         <ThemedView style={styles.headerContent}>
           <ThemedText type="title" style={styles.title}>AI Interview: {getRoleName(roleId)}</ThemedText>
@@ -195,13 +202,18 @@ useEffect(() => {
       
       <BlurView intensity={30} style={styles.controlsContainer}>
         {status === 'ready' && (
-          <TouchableOpacity style={styles.startButton} onPress={startInterview}>
-            <ThemedText style={styles.buttonText}>Start Interview</ThemedText>
-          </TouchableOpacity>
+          <FuturisticButton 
+            title="Start Interview"
+            onPress={startInterview}
+            variant="primary"
+            size="large"
+          />
         )}
         
         {status === 'recording' && (
           <View style={styles.micButtonContainer}>
+            {isRecording && <VoiceAmplitude isRecording={isRecording} />}
+            
             <Animated.View style={{
               transform: [{ scale: pulseAnim }],
               opacity: isRecording ? 0.8 : 1
@@ -221,9 +233,11 @@ useEffect(() => {
         )}
         
         {(status === 'recording' || status === 'responding') && (
-          <TouchableOpacity style={styles.endButton} onPress={endInterview}>
-            <ThemedText style={styles.buttonText}>End Interview</ThemedText>
-          </TouchableOpacity>
+          <FuturisticButton 
+            title="End Interview"
+            onPress={endInterview}
+            variant="danger"
+          />
         )}
         
         {status === 'completed' && (
@@ -244,6 +258,7 @@ useEffect(() => {
   );
 }
 
+// Update styles to match the futuristic theme
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -367,7 +382,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   micButtonRecording: {
-    backgroundColor: '#b21f1f',
+    backgroundColor: '#FF3B30',
   },
   recordingText: {
     color: 'white',

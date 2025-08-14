@@ -59,6 +59,32 @@ const interviewRoles: InterviewRole[] = [
     color: '#9C27B0',
     duration: 15,
   },
+  {
+    id: 'uiux',
+    title: 'UI/UX Designer',
+    description: 'User-centered design, wireframing, prototyping, and visual design',
+    icon: 'eyedropper',
+    color: '#2196F3',
+    duration: 15,
+  },
+  {
+    id: 'data',
+    title: 'Data Scientist',
+    description: 'Statistical analysis, machine learning, data visualization, and big data tools',
+    icon: 'chart.pie.fill',
+    color: '#FF9800',
+    duration: 20,
+
+  },
+  {
+     id: 'Software ',
+    title: 'Software',
+    description: 'Pure DSA Rounds',
+    icon: 'chart.pie.fill',
+    color: '#FF9800',
+    duration: 20,
+  }
+
 ];
 
 export default function RoleSelectionScreen() {
@@ -106,7 +132,7 @@ export default function RoleSelectionScreen() {
             activeOpacity={0.8}
           >
             <ThemedView style={[styles.iconContainer, { backgroundColor: role.color }]}>
-              <IconSymbol name={role.icon} size={24} color="white" />
+              <IconSymbol name={role.icon as any} size={24} color="white" />
             </ThemedView>
             <ThemedView style={styles.roleInfo}>
               <ThemedText type="defaultSemiBold" style={styles.roleTitle}>{role.title}</ThemedText>
