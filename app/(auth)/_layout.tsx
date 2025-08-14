@@ -9,6 +9,7 @@ export default function AuthLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
+        <Stack.Screen name="role-selection" />
       </Stack>
       <StatusBar style="light" />
     </GestureHandlerRootView>

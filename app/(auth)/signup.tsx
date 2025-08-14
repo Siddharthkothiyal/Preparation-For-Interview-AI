@@ -16,8 +16,8 @@ export default function SignupScreen() {
 
   const handleSignup = () => {
     // In a real app, you would validate and create account here
-    // For now, just navigate to the main app
-    router.replace('/(tabs)');
+    // Navigate to role selection instead of tabs
+    router.replace('/(auth)/role-selection');
   };
 
   return (

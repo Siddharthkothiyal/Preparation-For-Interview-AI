@@ -1,8 +1,9 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -11,21 +12,110 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 type InterviewStatus = 'ready' | 'recording' | 'thinking' | 'responding' | 'completed';
 
 export default function InterviewScreen() {
+  const params = useLocalSearchParams<{ roleId: string, duration: string }>();
+  const roleId = params.roleId || 'frontend';
+  const duration = parseInt(params.duration || '15', 10);
+  
   const [status, setStatus] = useState<InterviewStatus>('ready');
   const [messages, setMessages] = useState<{text: string, isUser: boolean}[]>([]);
-  const [score, setScore] = useState<number | null>(null);
+  const [score, setScore, ] = useState<number | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(duration * 60); // Convert minutes to seconds
+  const [timerActive, setTimerActive] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  // Animation for the microphone button
+  useEffect(() => {
+    if (isRecording) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 0,
+        useNativeDriver: true,
+      }).stop();
+    }
+  }, [isRecording, pulseAnim]);
+  
+  // Timer countdown effect
+useEffect(() => {
+  let interval: ReturnType<typeof setInterval>;
+
+  if (timerActive && timeRemaining > 0) {
+    interval = setInterval(() => {
+      setTimeRemaining(prev => prev - 1);
+    }, 1000);
+  } else if (timeRemaining === 0 && timerActive) {
+    setTimerActive(false);
+    endInterview();
+    Alert.alert(
+      "Time's Up!",
+      "Your interview session has ended.",
+      [{ text: "View Results", onPress: () => {} }]
+    );
+  }
+
+  return () => clearInterval(interval);
+}, [timerActive, timeRemaining]);
+    
+
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
   
   const startInterview = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStatus('recording');
+    setTimerActive(true);
     setMessages([{
-      text: "Hello! I'm your AI interviewer today. Let's start with a simple question: Tell me about yourself and your background in software development.",
+      text: `Hello! I'm your AI interviewer today for the ${getRoleName(roleId)} position. Let's start with a simple question: Tell me about yourself and your background in this field.`,
       isUser: false
     }]);
   };
   
+  const getRoleName = (id: string) => {
+    const roleNames: {[key: string]: string} = {
+      'frontend': 'Frontend Developer',
+      'backend': 'Backend Developer',
+      'fullstack': 'Full Stack Developer',
+      'mobile': 'Mobile Developer',
+      'devops': 'DevOps Engineer'
+    };
+    return roleNames[id] || 'Software Developer';
+  };
+  
+  const toggleRecording = () => {
+    if (!isRecording) {
+      // Start recording
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setIsRecording(true);
+    } else {
+      // Stop recording and send response
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setIsRecording(false);
+      simulateUserResponse();
+    }
+  };
+  
   const simulateUserResponse = () => {
-    // In a real app, this would be voice input
+    // In a real app, this would process the recorded voice input
     setStatus('thinking');
     
     setTimeout(() => {
@@ -50,6 +140,7 @@ export default function InterviewScreen() {
   const endInterview = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setStatus('completed');
+    setTimerActive(false);
     setScore(85); // Example score
   };
 
@@ -59,7 +150,14 @@ export default function InterviewScreen() {
       style={styles.container}
     >
       <ThemedView style={styles.header}>
-        <ThemedText type="title" style={styles.title}>AI Interview</ThemedText>
+        <ThemedView style={styles.headerContent}>
+          <ThemedText type="title" style={styles.title}>AI Interview: {getRoleName(roleId)}</ThemedText>
+          <ThemedView style={styles.timerContainer}>
+            <IconSymbol name="clock" size={16} color="white" />
+            <ThemedText style={styles.timer}>{formatTime(timeRemaining)}</ThemedText>
+          </ThemedView>
+        </ThemedView>
+        
         {status === 'completed' && (
           <ThemedView style={styles.scoreContainer}>
             <ThemedText style={styles.scoreText}>Your Score</ThemedText>
@@ -103,13 +201,23 @@ export default function InterviewScreen() {
         )}
         
         {status === 'recording' && (
-          <TouchableOpacity 
-            style={styles.recordingButton} 
-            onPress={simulateUserResponse}
-          >
-            <IconSymbol name="mic.fill" size={30} color="white" />
-            <ThemedText style={styles.recordingText}>Tap to simulate response</ThemedText>
-          </TouchableOpacity>
+          <View style={styles.micButtonContainer}>
+            <Animated.View style={{
+              transform: [{ scale: pulseAnim }],
+              opacity: isRecording ? 0.8 : 1
+            }}>
+              <TouchableOpacity 
+                style={[styles.micButton, isRecording && styles.micButtonRecording]} 
+                onPress={toggleRecording}
+                activeOpacity={0.7}
+              >
+                <IconSymbol name="mic.fill" size={30} color="white" />
+              </TouchableOpacity>
+            </Animated.View>
+            <ThemedText style={styles.recordingText}>
+              {isRecording ? "Tap to send" : "Tap to record"}
+            </ThemedText>
+          </View>
         )}
         
         {(status === 'recording' || status === 'responding') && (
@@ -146,9 +254,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: 'transparent',
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
   title: {
     color: 'white',
-    textAlign: 'center',
+    flex: 1,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  timer: {
+    color: 'white',
+    marginLeft: 5,
+    fontWeight: 'bold',
   },
   scoreContainer: {
     alignItems: 'center',
@@ -222,17 +349,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  recordingButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  micButtonContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  micButton: {
+    backgroundColor: '#0a7ea4',
+    width: 80,
     height: 80,
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  micButtonRecording: {
+    backgroundColor: '#b21f1f',
   },
   recordingText: {
     color: 'white',
-    marginTop: 5,
+    marginTop: 10,
+    fontSize: 14,
   },
   feedbackContainer: {
     backgroundColor: 'transparent',

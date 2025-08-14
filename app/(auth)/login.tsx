@@ -14,8 +14,8 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     // In a real app, you would validate and authenticate here
-    // For now, just navigate to the main app
-    router.replace('/(tabs)');
+    // Navigate to role selection instead of tabs
+    router.replace('/(auth)/role-selection');
   };
 
   return (
