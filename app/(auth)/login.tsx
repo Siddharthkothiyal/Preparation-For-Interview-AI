@@ -1,75 +1,95 @@
-import { useState } from 'react';
-import { StyleSheet, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { Link, router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { TextInput } from 'react-native-gesture-handler';
+import { SupabaseService } from '@/services/SupabaseService';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleLogin = () => {
-    // In a real app, you would validate and authenticate here
-    // Navigate to role selection instead of tabs
-    router.replace('/(auth)/role-selection');
+  const [isLoading, setIsLoading] = useState(false);
+  const supabaseService = SupabaseService.getInstance();
+  
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+    
+    setIsLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    try {
+      await supabaseService.signIn(email, password);
+      router.replace('/(tabs)/interview');
+    } catch (error) {
+      Alert.alert('Login Failed', error instanceof Error ? error.message : 'Please check your credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleSignUp = () => {
+    router.push('/(auth)/signup');
   };
 
   return (
     <LinearGradient
-      colors={['#1a2a6c', '#b21f1f', '#fdbb2d']}
+      colors={['#000000', '#121212']}
       style={styles.container}
     >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <Image 
-          source={require('@/assets/images/icon.png')} 
-          style={styles.logo} 
-          resizeMode="contain"
+      <ThemedView style={styles.header}>
+        <ThemedText type="title" style={styles.title}>Interview Prep</ThemedText>
+        <ThemedText style={styles.subtitle}>Practice your interview skills with AI</ThemedText>
+      </ThemedView>
+      
+      <ThemedView style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="rgba(255,255,255,0.5)"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
         
-        <ThemedText type="title" style={styles.title}>AI Interview Prep</ThemedText>
-        <ThemedText style={styles.subtitle}>Your AI-powered interview assistant</ThemedText>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="rgba(255,255,255,0.5)"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
         
-        <BlurView intensity={30} style={styles.formContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-          
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <TouchableOpacity style={styles.forgotPassword}>
+          <ThemedText style={styles.forgotPasswordText}>Forgot Password?</ThemedText>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.loginButton}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
             <ThemedText style={styles.buttonText}>Login</ThemedText>
+          )}
+        </TouchableOpacity>
+        
+        <View style={styles.signupContainer}>
+          <ThemedText style={styles.signupText}>Don't have an account? </ThemedText>
+          <TouchableOpacity onPress={handleSignUp}>
+            <ThemedText style={styles.signupLink}>Sign Up</ThemedText>
           </TouchableOpacity>
-          
-          <ThemedView style={styles.footer}>
-            <ThemedText style={styles.footerText}>Don't have an account? </ThemedText>
-            <Link href="/(auth)/signup" asChild>
-              <TouchableOpacity>
-                <ThemedText style={styles.linkText}>Sign Up</ThemedText>
-              </TouchableOpacity>
-            </Link>
-          </ThemedView>
-        </BlurView>
-      </KeyboardAvoidingView>
+        </View>
+      </ThemedView>
     </LinearGradient>
   );
 }
@@ -77,67 +97,68 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    padding: 20,
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+  header: {
+    marginTop: 100,
+    marginBottom: 50,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   title: {
+    fontSize: 32,
+    fontWeight: 'bold',
     color: 'white',
-    marginBottom: 8,
-    textAlign: 'center',
+    marginBottom: 10,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.8)',
     fontSize: 16,
-    marginBottom: 40,
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
   },
   formContainer: {
-    width: '85%',
-    borderRadius: 20,
+    backgroundColor: 'transparent',
     padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
   },
   input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    height: 55,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 10,
     marginBottom: 15,
     paddingHorizontal: 15,
     color: 'white',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    fontSize: 16,
   },
-  button: {
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: '#0a7ea4',
+    fontSize: 14,
+  },
+  loginButton: {
     backgroundColor: '#0a7ea4',
-    height: 50,
+    height: 55,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    marginBottom: 20,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  footer: {
+  signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
-    backgroundColor: 'transparent',
   },
-  footerText: {
-    color: 'rgba(255,255,255,0.8)',
+  signupText: {
+    color: 'rgba(255,255,255,0.7)',
   },
-  linkText: {
-    color: 'white',
+  signupLink: {
+    color: '#0a7ea4',
     fontWeight: 'bold',
   },
 });

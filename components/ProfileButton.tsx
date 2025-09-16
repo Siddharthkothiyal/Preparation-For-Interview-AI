@@ -1,19 +1,38 @@
-import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, Modal, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Animated, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { IconSymbol } from './ui/IconSymbol';
-import { ThemedText } from './ThemedText';
-import { ThemedView } from './ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from './ThemedText';
+import { ThemedView } from './ThemedView';
+import { IconSymbol } from './ui/IconSymbol';
 
 export function ProfileButton() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [scale] = useState(new Animated.Value(1));
+  
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4
+    }).start();
+  };
+  
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4
+    }).start();
+  };
 
   const handleProfilePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -29,17 +48,21 @@ export function ProfileButton() {
 
   return (
     <>
-      <TouchableOpacity 
-        style={styles.profileButton}
-        onPress={handleProfilePress}
-        activeOpacity={0.7}
-      >
-        <IconSymbol 
-          name="person.circle.fill" 
-          size={24} 
-          color={colors.primary} 
-        />
-      </TouchableOpacity>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={handleProfilePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.7}
+        >
+          <IconSymbol 
+            name="person.circle.fill" 
+            size={28} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+      </Animated.View>
 
       <Modal
         animationType="fade"
@@ -53,29 +76,32 @@ export function ProfileButton() {
           onPress={() => setIsModalVisible(false)}
         >
           <BlurView intensity={30} style={styles.blurView}>
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={e => e.stopPropagation()}
-            >
-              <ThemedView style={styles.modalContent}>
-                <ThemedText type="subtitle" style={styles.modalTitle}>Profile</ThemedText>
-                
-                <TouchableOpacity style={styles.profileOption}>
-                  <IconSymbol name="person.fill" size={20} color={colors.text} />
-                  <ThemedText style={styles.optionText}>Edit Profile</ThemedText>
+            <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+              <ThemedView style={styles.profileSection}>
+                <IconSymbol name="person.circle.fill" size={60} color={colors.primary} />
+                <ThemedText type="title" style={styles.profileName}>User Profile</ThemedText>
+                <ThemedText style={styles.profileEmail}>user@example.com</ThemedText>
+              </ThemedView>
+              
+              <ThemedView style={styles.menuSection}>
+                <TouchableOpacity style={styles.menuItem}>
+                  <IconSymbol name="gear" size={24} color={colors.text} />
+                  <ThemedText style={styles.menuText}>Settings</ThemedText>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.profileOption}>
-                  <IconSymbol name="gear" size={20} color={colors.text} />
-                  <ThemedText style={styles.optionText}>Settings</ThemedText>
+                <TouchableOpacity style={styles.menuItem}>
+                  <IconSymbol name="chart.bar" size={24} color={colors.text} />
+                  <ThemedText style={styles.menuText}>Statistics</ThemedText>
                 </TouchableOpacity>
                 
-                <TouchableOpacity 
-                  style={[styles.profileOption, styles.logoutOption]}
-                  onPress={handleLogout}
-                >
-                  <IconSymbol name="arrow.right.square" size={20} color={colors.error} />
-                  <ThemedText style={[styles.optionText, styles.logoutText]}>Logout</ThemedText>
+                <TouchableOpacity style={styles.menuItem}>
+                  <IconSymbol name="questionmark.circle" size={24} color={colors.text} />
+                  <ThemedText style={styles.menuText}>Help</ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                  <IconSymbol name="arrow.right.square" size={24} color="#FFFFFF" />
+                  <ThemedText style={styles.logoutText}>Logout</ThemedText>
                 </TouchableOpacity>
               </ThemedView>
             </TouchableOpacity>
@@ -91,18 +117,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.7)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   modalOverlay: {
     flex: 1,
@@ -111,35 +139,53 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   blurView: {
-    borderRadius: 15,
-    overflow: 'hidden',
     width: '80%',
-    maxWidth: 300,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   modalContent: {
     padding: 20,
-    borderRadius: 15,
   },
-  modalTitle: {
-    marginBottom: 15,
-    textAlign: 'center',
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: 'transparent',
   },
-  profileOption: {
+  profileName: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  profileEmail: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  menuSection: {
+    backgroundColor: 'transparent',
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(150,150,150,0.2)',
   },
-  optionText: {
-    marginLeft: 10,
+  menuText: {
+    marginLeft: 15,
     fontSize: 16,
   },
-  logoutOption: {
-    borderBottomWidth: 0,
-    marginTop: 5,
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
   },
   logoutText: {
-    color: '#FF3D71',
+    marginLeft: 15,
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
