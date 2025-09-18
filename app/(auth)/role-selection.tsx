@@ -13,6 +13,8 @@ import {
   View
 } from 'react-native';
 
+import { ProfileButton } from '@/components/ProfileButton';
+
 const { width } = Dimensions.get('window');
 const START_INTERVIEW_PATH = '/(tabs)/interview';
 
@@ -70,6 +72,8 @@ export default function RoleSelection() {
 
   return (
     <LinearGradient colors={['#06121a', '#081826']} style={styles.container}>
+      <ProfileButton />
+      
       <View style={styles.top}>
         <Text style={styles.pageTitle}>Choose Role</Text>
         <Text style={styles.pageSubtitle}>Pick a role to start a focused AI mock interview</Text>
@@ -98,9 +102,13 @@ export default function RoleSelection() {
                       isHovered && styles.cardHover
                     ]}
                   >
-                    <View style={[styles.card]}>
+                    <View style={styles.card}>
                       <View style={[styles.iconWrap, isSelected && styles.iconWrapSelected]}>
-                        <Ionicons name={role.icon as any} size={22} color={isSelected ? '#012a36' : 'white'} />
+                        <Ionicons
+                          name={role.icon as any}
+                          size={24}
+                          color={isSelected ? '#06121a' : 'white'}
+                        />
                       </View>
                       <View style={styles.roleInfo}>
                         <Text style={styles.roleTitle}>{role.title}</Text>
@@ -121,19 +129,16 @@ export default function RoleSelection() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          disabled={!selectedRole}
-          activeOpacity={0.9}
-          onPress={onStart}
           style={[styles.startButton, !selectedRole && styles.startButtonDisabled]}
+          onPress={onStart}
+          disabled={!selectedRole}
         >
           <LinearGradient
-            colors={selectedRole ? ['#06b6d4', '#0ea5e9'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-            start={[0, 0]}
-            end={[1, 1]}
+            colors={selectedRole ? ['#06b6d4', '#0891b2'] : ['#374151', '#4b5563']}
             style={styles.startGradient}
           >
             <Text style={[styles.startText, !selectedRole && styles.startTextDisabled]}>
-              {selectedRole ? `Start Interview — ${selectedRole.toUpperCase()}` : 'Select a role to begin'}
+              Start Interview
             </Text>
           </LinearGradient>
         </TouchableOpacity>

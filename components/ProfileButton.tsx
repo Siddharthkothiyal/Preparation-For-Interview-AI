@@ -2,7 +2,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Animated, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { Animated, Modal, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -46,28 +46,32 @@ export function ProfileButton() {
     router.replace('/(auth)/login');
   };
 
+  const menuItems = [
+    { icon: 'person.circle', text: 'Your Data', action: () => console.log('Your Data') },
+    { icon: 'lock.shield', text: 'Privacy & Security', action: () => console.log('Privacy & Security') },
+    { icon: 'questionmark.circle', text: 'Helpdesk', action: () => console.log('Helpdesk') },
+    { icon: 'doc.text', text: 'Data Privacy', action: () => console.log('Data Privacy') },
+    { icon: 'bell', text: 'Notifications & Alerts', action: () => console.log('Notifications') },
+    { icon: 'key', text: 'Login Info', action: () => console.log('Login Info') },
+  ];
+
   return (
     <>
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <TouchableOpacity 
-          style={styles.profileButton}
+      <Animated.View style={[styles.profileButton, { transform: [{ scale }] }]}>
+        <TouchableOpacity
           onPress={handleProfilePress}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
-          activeOpacity={0.7}
+          style={styles.touchable}
         >
-          <IconSymbol 
-            name="person.circle.fill" 
-            size={28} 
-            color="#FFFFFF" 
-          />
+          <IconSymbol name="person.circle.fill" size={28} color="#FFFFFF" />
         </TouchableOpacity>
       </Animated.View>
 
       <Modal
-        animationType="fade"
-        transparent={true}
         visible={isModalVisible}
+        transparent
+        animationType="fade"
         onRequestClose={() => setIsModalVisible(false)}
       >
         <TouchableOpacity 
@@ -75,32 +79,33 @@ export function ProfileButton() {
           activeOpacity={1}
           onPress={() => setIsModalVisible(false)}
         >
-          <BlurView intensity={30} style={styles.blurView}>
-            <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
-              <ThemedView style={styles.profileSection}>
-                <IconSymbol name="person.circle.fill" size={60} color={colors.primary} />
-                <ThemedText type="title" style={styles.profileName}>User Profile</ThemedText>
-                <ThemedText style={styles.profileEmail}>user@example.com</ThemedText>
-              </ThemedView>
-              
-              <ThemedView style={styles.menuSection}>
-                <TouchableOpacity style={styles.menuItem}>
-                  <IconSymbol name="gear" size={24} color={colors.text} />
-                  <ThemedText style={styles.menuText}>Settings</ThemedText>
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.menuItem}>
-                  <IconSymbol name="chart.bar" size={24} color={colors.text} />
-                  <ThemedText style={styles.menuText}>Statistics</ThemedText>
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.menuItem}>
-                  <IconSymbol name="questionmark.circle" size={24} color={colors.text} />
-                  <ThemedText style={styles.menuText}>Help</ThemedText>
-                </TouchableOpacity>
-                
+          <BlurView intensity={80} style={styles.blurView}>
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <ThemedView style={styles.modalContent}>
+                <ThemedView style={styles.profileSection}>
+                  <IconSymbol name="person.circle.fill" size={60} color={colors.text} />
+                  <ThemedText style={styles.profileName}>John Doe</ThemedText>
+                  <ThemedText style={styles.profileEmail}>john.doe@example.com</ThemedText>
+                </ThemedView>
+
+                <ScrollView style={styles.menuSection} showsVerticalScrollIndicator={false}>
+                  {menuItems.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.menuItem}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        item.action();
+                      }}
+                    >
+                      <IconSymbol name={item.icon} size={20} color={colors.text} />
+                      <ThemedText style={styles.menuText}>{item.text}</ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                  <IconSymbol name="arrow.right.square" size={24} color="#FFFFFF" />
+                  <IconSymbol name="arrow.right.square" size={20} color="#FFFFFF" />
                   <ThemedText style={styles.logoutText}>Logout</ThemedText>
                 </TouchableOpacity>
               </ThemedView>
@@ -132,6 +137,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
+  touchable: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -139,7 +150,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   blurView: {
-    width: '80%',
+    width: '85%',
+    maxHeight: '80%',
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -162,6 +174,7 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     backgroundColor: 'transparent',
+    maxHeight: 300,
   },
   menuItem: {
     flexDirection: 'row',
@@ -177,13 +190,14 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 20,
     padding: 15,
     backgroundColor: '#FF3B30',
     borderRadius: 10,
   },
   logoutText: {
-    marginLeft: 15,
+    marginLeft: 10,
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: 'bold',
