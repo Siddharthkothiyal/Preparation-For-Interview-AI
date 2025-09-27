@@ -1,50 +1,87 @@
-# Welcome to your Expo app 👋
+# 📝 Preparation-For-Interview-AI
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+[![GitHub Repo stars](https://img.shields.io/github/stars/Siddharthkothiyal/Preparation-For-Interview-AI?style=social)](https://github.com/Siddharthkothiyal/Preparation-For-Interview-AI/stargazers)  
+[![GitHub issues](https://img.shields.io/github/issues/Siddharthkothiyal/Preparation-For-Interview-AI)](https://github.com/Siddharthkothiyal/Preparation-For-Interview-AI/issues)  
+[![GitHub last commit](https://img.shields.io/github/last-commit/Siddharthkothiyal/Preparation-For-Interview-AI)](https://github.com/Siddharthkothiyal/Preparation-For-Interview-AI/commits/main)  
+[![GitHub contributors](https://img.shields.io/github/contributors/Siddharthkothiyal/Preparation-For-Interview-AI)](https://github.com/Siddharthkothiyal/Preparation-For-Interview-AI/graphs/contributors)  
 
-## Get started
+**AI-powered platform to help users prepare for job interviews with interactive mock interviews, AI-generated questions, and instant feedback.**
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 🚀 Key Features
 
-2. Start the app
+- **Job Description Parsing** – AI generates interview questions tailored to any job description.  
+- **Interactive Mock Interviews** – Practice interviews as if in a real scenario.  
+- **Real-Time Feedback** – Detailed insights on strengths and areas for improvement.  
+- **Voice & Text Interaction** – Answer questions by typing or speaking.  
+- **Role-Based Experience** – Supports different user roles (Candidate / Interviewer).  
+- **Progress Tracking** – Monitor improvement over multiple sessions.  
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 📸 Screenshots & Walkthrough
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### **1️⃣ Login Page**
+![Login Page](./assets/screenshots/login.png)  
+Secure login interface for returning users. Includes email/password authentication and validation.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### **2️⃣ Signup Page**
+![Signup Page](./assets/screenshots/signup.png)  
+Signup page for new users with smooth onboarding experience and account creation.
 
-## Get a fresh project
+### **3️⃣ Role Selection Page**
+![Role Selection Page](./assets/screenshots/role_selection.png)  
+Users select their role (Candidate or Interviewer) to access role-specific features.
 
-When you're ready, run:
+### **4️⃣ Home / Job Description Input**
+![Home Screen](./assets/screenshots/home.png)  
+Dashboard where candidates input job descriptions. AI parses and generates tailored interview questions.
+
+### **5️⃣ Interview Simulation**
+![Interview Simulation](./assets/screenshots/interview.png)  
+Interactive interview screen with typing or voice input. Simulates real interview experience.
+
+### **6️⃣ Feedback Summary**
+![Feedback Summary](./assets/screenshots/feedback.png)  
+Detailed feedback highlighting strengths, areas to improve, and suggestions to refine answers.
+
+> ⚠️ Replace these image paths with your actual exported Figma screenshots in `assets/screenshots/`.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React Native (Expo)  
+- **Backend:** Node.js + Express  
+- **AI Integration:** OpenAI GPT-3  
+- **Voice Interaction:** Web Speech API  
+- **Database & Storage:** Firebase  
+
+---
+
+## ⚙️ Installation
+
+### Prerequisites
+
+- Node.js (v14+)  
+- Expo CLI  
+- Firebase account  
+
+### Steps
+FIREBASE_API_KEY=your-api-key
+FIREBASE_AUTH_DOMAIN=your-auth-domain
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_STORAGE_BUCKET=your-storage-bucket
+FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+FIREBASE_APP_ID=your-app-id
+
+
+expo start
+
 
 ```bash
-npm run reset-project
-```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+git clone https://github.com/Siddharthkothiyal/Preparation-For-Interview-AI.git
+cd Preparation-For-Interview-AI
+npm install
