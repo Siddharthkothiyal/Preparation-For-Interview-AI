@@ -29,7 +29,7 @@ export default function LoginScreen() {
     const checkSession = async () => {
       try {
         const supabase = supabaseService.getSupabase();
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error } = await supabase!.auth.getSession();
         if (error) console.warn('Session check error:', error.message);
 
         if (data.session) {

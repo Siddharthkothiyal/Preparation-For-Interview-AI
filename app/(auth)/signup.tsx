@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Linking from 'expo-linking';
 import { Link, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -43,7 +44,8 @@ export default function SignupScreen() {
     Haptics.impactAsync && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      await supabaseService.signUp(email, password, name);
+      const redirectUrl = Linking.createURL('/(auth)/verify'); // ensure this exact URL is added in Supabase Redirect URLs
+      await supabaseService.signUp(email, password, name, redirectUrl);
       Alert.alert('Success', 'Check your email for verification link.');
       router.push('/pricing');
     } catch (error: any) {

@@ -16,15 +16,13 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice recognition during interviews.",
-        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to transcribe your interview responses."
+        "NSMicrophoneUsageDescription": "Microphone access is required to record your interview answers."
       }
     },
     "android": {
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.INTERNET"
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {

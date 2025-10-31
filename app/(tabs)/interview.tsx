@@ -417,30 +417,27 @@ export default function InterviewScreen() {
       const supabase = SupabaseService.getInstance();
       const user = await supabase.getCurrentUser();
 
-      if (user) {
-        const client = supabase.getSupabase();
-        if (!client) {
-          console.warn('Supabase client not initialized');
-          return;
-        }
-        const { error } = await client
-          .from('interviews')
-          .insert({
-            user_id: user.id,
-            role: selectedRole,
-            questions: randomizedQuestions,
-            responses: userResponses,
-            feedback: feedbackData,
-            score: score,
-            created_at: new Date().toISOString()
-          });
+      // Build payload once
+      const payload = {
+        role: selectedRole,
+        questions: randomizedQuestions,
+        responses: userResponses,
+        feedback: feedbackData,
+        score,
+      };
 
-        if (error) throw error;
-        console.log('Interview data saved successfully');
+      // Use service method (handles null userId internally)
+      await supabase.saveInterviewData(user?.id ?? null, payload);
+
+      // Cache feedback for fast access on Feedback screen
+      if (feedbackData) {
+        SupabaseService.getInstance().setLastFeedback(feedbackData);
       }
+
+      console.log('Interview data saved successfully');
     } catch (error) {
       console.error('Error saving interview data:', error);
-      // Don't show alert to user to avoid disrupting the experience
+      // Do not interrupt UX for save failures
     }
   };
 
@@ -449,6 +446,7 @@ export default function InterviewScreen() {
     try { await speechService.stop(); } catch (e) { console.warn('speech stop', e); }
     setStatus('completed');
     setTimerActive(false);
+
     if (feedbackData) {
       const sum =
         (feedbackData.tone ?? 0) +
@@ -460,7 +458,10 @@ export default function InterviewScreen() {
       const overall = Math.round(avg * 10); // convert to 0..100
       setScore(overall);
 
-      // Save interview data after setting the score
+      // Cache feedback immediately so Feedback screen shows it
+      SupabaseService.getInstance().setLastFeedback(feedbackData);
+
+      // persist interview data (non-blocking UX)
       await saveInterviewData();
     } else {
       setScore(78);

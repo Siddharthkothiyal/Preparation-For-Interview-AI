@@ -5,34 +5,31 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// ✅ Replace with your actual Supabase credentials
-const supabaseUrl = 'https://zhdvmejbtbzumzravkpe.supabase.co';
-const supabaseAnonKey =
+// Replace with your actual Supabase credentials or read from env
+const SUPABASE_URL = 'https://zhdvmejbtbzumzravkpe.supabase.co';
+const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoZHZtZWpidGJ6dW16cmF2a3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjE4NzgsImV4cCI6MjA3MjI5Nzg3OH0.RfAWV0_xZdxunr2nIB6-vdqVI0c8I1Phn2dK29PSI78';
 
 export default class SupabaseService {
   private static instance: SupabaseService;
-  private supabase: SupabaseClient;
+  private supabase: SupabaseClient | null = null;
+  private lastFeedback: any = null;
 
   private constructor() {
     try {
-      console.log('✅ Initializing Supabase client...');
-      this.supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      // create client; in React Native environment, default fetch works in Expo
+      this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
-          storage: AsyncStorage,
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
+          // use AsyncStorage for session persistence
+          storage: AsyncStorage as any,
         },
       });
-      console.log('✅ Supabase client initialized successfully!');
     } catch (error: any) {
-      console.error('❌ Failed to initialize Supabase client:', error.message || error);
-      throw error;
+      console.warn('Supabase init error', error);
+      this.supabase = null;
     }
   }
 
-  // ✅ Singleton pattern
   public static getInstance(): SupabaseService {
     if (!SupabaseService.instance) {
       SupabaseService.instance = new SupabaseService();
@@ -40,159 +37,136 @@ export default class SupabaseService {
     return SupabaseService.instance;
   }
 
-  // ✅ Accessor for the Supabase client
-  public getSupabase(): SupabaseClient {
+  public getSupabase(): SupabaseClient | null {
     return this.supabase;
   }
 
-  // ======================
-  // 🔐 AUTH FUNCTIONS
-  // ======================
+  // AUTH
+  public async signUp(email: string, password: string, name?: string, emailRedirectTo?: string) {
+    if (!this.supabase) throw new Error('Supabase not initialized');
 
-  public async signUp(email: string, password: string) {
-  try {
-    const { data, error } = await this.supabase.auth.signUp({
+    const options: any = { data: { name } };
+    if (emailRedirectTo) options.emailRedirectTo = emailRedirectTo;
+
+    const res = await this.supabase.auth.signUp({
       email,
       password,
-      // optional metadata:
-      options: {
-        data: { created_at: new Date().toISOString() }, // ✅ this must be an object, not string
-      },
+      options, // includes data and optional emailRedirectTo
     });
 
-    if (error) throw error;
-    console.log('✅ Sign up successful:', data);
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('❌ Sign up error:', error.message);
-    return { data: null, error };
+    if (res.error) throw res.error;
+    return res.data;
   }
-}
 
   public async signIn(email: string, password: string) {
-  try {
-    const { data, error } = await this.supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      if (error.message.includes('Email not confirmed')) {
-        throw new Error('Please verify your email before logging in.');
-      }
-      throw error;
-    }
-
-    console.log('✅ Sign in successful:', data);
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('❌ Sign-in error:', error.message);
-    return { data: null, error };
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const res = await this.supabase.auth.signInWithPassword({ email, password });
+    if (res.error) throw res.error;
+    return res.data;
   }
-}
 
   public async signOut() {
-    try {
-      const { error } = await this.supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('❌ Sign-out error:', error.message || error);
-      throw error;
-    }
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const res = await this.supabase.auth.signOut();
+    if (res.error) throw res.error;
+    return res;
   }
 
   public async getCurrentUser() {
-    const {
-      data: { user },
-      error,
-    } = await this.supabase.auth.getUser();
-    if (error) throw error;
-    return user;
+    if (!this.supabase) return null;
+    const { data, error } = await this.supabase.auth.getUser();
+    if (error) {
+      console.warn('getCurrentUser error', error);
+      return null;
+    }
+    return data.user ?? null;
   }
 
   public async getSession() {
+    if (!this.supabase) return null;
     const { data, error } = await this.supabase.auth.getSession();
-    if (error) throw error;
-    return data.session;
+    if (error) {
+      console.warn('getSession error', error);
+      return null;
+    }
+    return data.session ?? null;
   }
 
   public async resetPassword(email: string) {
-    const { error } = await this.supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const res = await this.supabase.auth.resetPasswordForEmail(email);
+    if (res.error) throw res.error;
+    return res;
   }
 
-  // ======================
-  // 👤 USER PROFILE FUNCTIONS
-  // ======================
-
+  // USER PROFILE
   public async createUserProfile(userId: string, profileData: any) {
-    const { error } = await this.supabase
-      .from('user_profiles')
-      .upsert({
-        user_id: userId,
-        ...profileData,
-        updated_at: new Date().toISOString(),
-      });
-
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const { error } = await this.supabase.from('user_profiles').upsert({
+      user_id: userId,
+      ...profileData,
+      updated_at: new Date().toISOString(),
+    });
     if (error) throw error;
   }
 
   public async getUserProfile(userId: string) {
-    const { data, error } = await this.supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) throw error;
-    return data;
+    if (!this.supabase) return null;
+    const { data, error } = await this.supabase.from('user_profiles').select('*').eq('user_id', userId).single();
+    if (error) {
+      console.warn('getUserProfile error', error);
+      return null;
+    }
+    return data ?? null;
   }
 
-  // ======================
-  // 🧠 INTERVIEW DATA
-  // ======================
-
-  public async saveInterviewData(userId: string, interviewData: any) {
-    const { error } = await this.supabase
-      .from('interviews')
-      .insert({
+  // INTERVIEW DATA
+  public async saveInterviewData(userId: string | null, interviewData: any) {
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    // store a copy in DB if user available
+    try {
+      const payload = {
         user_id: userId,
         ...interviewData,
         created_at: new Date().toISOString(),
-      });
-
-    if (error) throw error;
+      };
+      const { error } = await this.supabase.from('interviews').insert(payload);
+      if (error) {
+        console.warn('saveInterviewData db error', error);
+      } else {
+        // cache last feedback locally as well
+        this.lastFeedback = interviewData.feedback ?? null;
+      }
+    } catch (e) {
+      console.warn('saveInterviewData error', e);
+    }
   }
 
   public async getInterviewHistory(userId: string) {
-    const { data, error } = await this.supabase
-      .from('interviews')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
+    if (!this.supabase) return [];
+    const { data, error } = await this.supabase.from('interviews').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (error) {
+      console.warn('getInterviewHistory error', error);
+      return [];
+    }
+    return data ?? [];
   }
 
-  // ======================
-  // 💳 SUBSCRIPTION MANAGEMENT
-  // ======================
+  // Last feedback cache (in-memory). Useful for passing feedback to Feedback screen.
+  public setLastFeedback(fb: any) {
+    this.lastFeedback = fb;
+  }
+  public getLastFeedback() {
+    return this.lastFeedback;
+  }
 
+  // SUBSCRIPTIONS (simple example)
   public async updateSubscription(userId: string, selectedPlan: string) {
-    const { data, error } = await this.supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: userId,
-        plan: selectedPlan,
-        updated_at: new Date().toISOString(),
-      })
-      .select();
-
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    // minimal: upsert field on user_profiles
+    const { error } = await this.supabase.from('user_profiles').upsert({ user_id: userId, plan: selectedPlan, updated_at: new Date().toISOString() });
     if (error) throw error;
-    return data;
   }
 }
 
-// ✅ Export Singleton Instance
 export const supabaseService = SupabaseService.getInstance();

@@ -34,29 +34,12 @@ export default function PricingScreen() {
   const handleSelectPlan = async (planId: string) => {
     setLoading(true);
     try {
-      // Guard: check current user; do not assume session exists
-      let user = null;
-      try {
-        user = await supabase.getCurrentUser();
-      } catch (e) {
-        console.warn('getCurrentUser failed', e);
-      }
-
-      if (!user) {
-        // Not logged in: redirect to login / signup before checkout
-        Alert.alert('Sign in required', 'Please sign in to select a paid plan.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign in', onPress: () => router.push('/(auth)/login') },
-        ]);
-        return;
-      }
-
-      // Replace with your actual checkout flow / route
-      // Example: navigate to checkout screen with plan query param
-      router.push({ pathname: '/checkout', params: { plan: planId } });
+      // Navigate directly to the role-selection screen under (auth)
+      // so the plan query param is passed along.
+      router.push(`/(auth)/role-selection?plan=${encodeURIComponent(planId)}`);
     } catch (error) {
       console.error('Error selecting plan', error);
-      Alert.alert('Error', 'Could not start checkout. Check your network and try again.');
+      Alert.alert('Error', 'Could not start role selection. Check your network and try again.');
     } finally {
       setLoading(false);
     }
