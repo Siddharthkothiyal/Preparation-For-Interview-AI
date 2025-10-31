@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { Colors } from '@/constants/Colors';
@@ -9,12 +9,34 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { IconSymbol } from './ui/IconSymbol';
+import { SupabaseService } from '@/services/SupabaseService';
 
 export function ProfileButton() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [scale] = useState(new Animated.Value(1));
+  const [userData, setUserData] = useState({ name: 'User', email: 'user@example.com' });
+  
+  useEffect(() => {
+    // Fetch user data from Supabase
+    const fetchUserData = async () => {
+      try {
+        const supabase = SupabaseService.getInstance();
+        const user = await supabase.getCurrentUser();
+        if (user) {
+          setUserData({
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+            email: user.email || 'user@example.com'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    
+    fetchUserData();
+  }, []);
   
   const handlePressIn = () => {
     Animated.spring(scale, {
@@ -39,11 +61,18 @@ export function ProfileButton() {
     setIsModalVisible(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
-    // Navigate to login screen
-    router.replace('/(auth)/login');
+    
+    try {
+      const supabase = SupabaseService.getInstance();
+      await supabase.signOut();
+      // Navigate to login screen
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const menuItems = [
@@ -84,8 +113,8 @@ export function ProfileButton() {
               <ThemedView style={styles.modalContent}>
                 <ThemedView style={styles.profileSection}>
                   <IconSymbol name="person.circle.fill" size={60} color={colors.text} />
-                  <ThemedText style={styles.profileName}>John Doe</ThemedText>
-                  <ThemedText style={styles.profileEmail}>john.doe@example.com</ThemedText>
+                  <ThemedText style={styles.profileName}>{userData.name}</ThemedText>
+                  <ThemedText style={styles.profileEmail}>{userData.email}</ThemedText>
                 </ThemedView>
 
                 <ScrollView style={styles.menuSection} showsVerticalScrollIndicator={false}>

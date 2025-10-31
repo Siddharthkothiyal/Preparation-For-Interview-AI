@@ -1,23 +1,57 @@
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, router } from 'expo-router';
-import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity
+} from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { TextInput } from 'react-native-gesture-handler';
+import SupabaseService from '@/services/SupabaseService';
 
 export default function SignupScreen() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = () => {
-    // In a real app, you would validate and create account here
-    // Navigate to role selection instead of tabs
-    router.replace('/(auth)/role-selection');
+  const supabaseService = useMemo(() => SupabaseService.getInstance(), []);
+
+  const handleSignup = async () => {
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Missing Information', 'Please fill in all fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+    Haptics.impactAsync && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      await supabaseService.signUp(email, password, name);
+      Alert.alert('Success', 'Check your email for verification link.');
+      router.push('/pricing');
+    } catch (error: any) {
+      console.error('signup error', error);
+      Alert.alert('Error', error.message || 'Failed to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -30,14 +64,14 @@ export default function SignupScreen() {
         style={styles.container}
       >
         <Image 
-          source={require('@/assets/images/icon.png')} 
+          source={require('../../assets/images/icon.png')} 
           style={styles.logo} 
           resizeMode="contain"
         />
-        
+
         <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
         <ThemedText style={styles.subtitle}>Join AI Interview Prep today</ThemedText>
-        
+
         <BlurView intensity={30} style={styles.formContainer}>
           <TextInput
             style={styles.input}
@@ -47,7 +81,7 @@ export default function SignupScreen() {
             onChangeText={setName}
             autoCapitalize="words"
           />
-          
+
           <TextInput
             style={styles.input}
             placeholder="Email"
@@ -57,7 +91,7 @@ export default function SignupScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          
+
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -66,7 +100,7 @@ export default function SignupScreen() {
             onChangeText={setPassword}
             secureTextEntry
           />
-          
+
           <TextInput
             style={styles.input}
             placeholder="Confirm Password"
@@ -75,11 +109,19 @@ export default function SignupScreen() {
             onChangeText={setConfirmPassword}
             secureTextEntry
           />
-          
-          <TouchableOpacity style={styles.button} onPress={handleSignup}>
-            <ThemedText style={styles.buttonText}>Sign Up</ThemedText>
+
+          <TouchableOpacity
+            style={[styles.button, isLoading && { opacity: 0.6 }]}
+            onPress={handleSignup}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <ThemedText style={styles.buttonText}>Sign Up</ThemedText>
+            )}
           </TouchableOpacity>
-          
+
           <ThemedView style={styles.footer}>
             <ThemedText style={styles.footerText}>Already have an account? </ThemedText>
             <Link href="/(auth)/login" asChild>
@@ -95,69 +137,15 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
-  title: {
-    color: 'white',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 16,
-    marginBottom: 40,
-    textAlign: 'center',
-  },
-  formContainer: {
-    width: '85%',
-    borderRadius: 20,
-    padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 10,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    color: 'white',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  button: {
-    backgroundColor: '#0a7ea4',
-    height: 50,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-    backgroundColor: 'transparent',
-  },
-  footerText: {
-    color: 'rgba(255,255,255,0.8)',
-  },
-  linkText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
+  logo: { width: 120, height: 120, marginBottom: 20 },
+  title: { color: 'white', marginBottom: 8, textAlign: 'center' },
+  subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 16, marginBottom: 40, textAlign: 'center' },
+  formContainer: { width: '85%', borderRadius: 20, padding: 20, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  input: { height: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 10, marginBottom: 15, paddingHorizontal: 15, color: 'white', backgroundColor: 'rgba(255,255,255,0.04)' },
+  button: { backgroundColor: '#0a7ea4', height: 50, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  footerText: { color: 'rgba(255,255,255,0.8)' },
+  linkText: { color: 'white', fontWeight: 'bold' },
 });

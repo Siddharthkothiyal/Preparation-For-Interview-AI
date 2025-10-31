@@ -1,9 +1,8 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useRef } from 'react';
 import { Animated, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { IconSymbol } from './ui/IconSymbol';
 
@@ -13,15 +12,14 @@ type BackButtonProps = {
 
 export function BackButton({ onPress }: BackButtonProps) {
   const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-  const [scale] = useState(new Animated.Value(1));
-  
+  const iconColor = colorScheme === 'dark' ? '#FFFFFF' : '#111111';
+  const scale = useRef(new Animated.Value(1)).current;
+  const router = useRouter();
+
   const handlePressIn = () => {
     Animated.spring(scale, {
       toValue: 0.9,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4
     }).start();
   };
   
@@ -29,19 +27,16 @@ export function BackButton({ onPress }: BackButtonProps) {
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4
     }).start();
   };
   
   const handlePress = () => {
     // Provide haptic feedback for better touch experience
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     if (onPress) {
       onPress();
     } else {
-      // Default behavior is to go back
       router.back();
     }
   };
@@ -54,11 +49,12 @@ export function BackButton({ onPress }: BackButtonProps) {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.7}
+        accessibilityLabel="Back"
       >
         <IconSymbol 
-          name="chevron.left" 
+          name="chevron-left" 
           size={28} 
-          color="#FFFFFF" 
+          color={iconColor} 
         />
       </TouchableOpacity>
     </Animated.View>

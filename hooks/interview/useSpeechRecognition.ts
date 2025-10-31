@@ -5,6 +5,7 @@ import Voice, {
   SpeechStartEvent
 } from '@react-native-voice/voice';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 
 interface SpeechRecognitionOptions {
   continuous?: boolean;
@@ -30,12 +31,51 @@ export function useSpeechRecognition(options?: SpeechRecognitionOptions) {
     optionsRef.current = options;
   }, [options]);
 
+  // Request microphone permission
+  const requestMicrophonePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: 'Microphone Permission',
+            message: 'This app needs access to your microphone to record your interview answers.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
+        if (!isGranted) {
+          Alert.alert(
+            'Microphone Permission Required',
+            'Voice recording requires microphone access. Please enable it in your device settings.',
+            [{ text: 'OK' }]
+          );
+        }
+        return isGranted;
+      } catch (err) {
+        console.error('Error requesting microphone permission:', err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  };
+
   useEffect(() => {
     // Check if speech recognition is available
     const checkAvailability = async () => {
       try {
         const available = await Voice.isAvailable();
         setIsAvailable(!!available);
+        
+        if (!available) {
+          console.warn('Speech recognition not available on this device');
+          Alert.alert(
+            'Speech Recognition Unavailable',
+            'Your device does not support speech recognition. Please use text input instead.'
+          );
+        }
       } catch (err) {
         console.warn('Speech recognition not available:', err);
         setIsAvailable(false);
@@ -101,63 +141,64 @@ export function useSpeechRecognition(options?: SpeechRecognitionOptions) {
   }, []);
 
   const startListening = useCallback(async () => {
-    if (!isAvailable) {
-      const errorMsg = 'Speech recognition is not available on this device';
-      setError(errorMsg);
-      optionsRef.current?.onError?.(errorMsg);
-      return;
-    }
-
+    if (isListening) return;
+    
+    setTranscript('');
+    setError(null);
+    
     try {
-      setTranscript('');
-      setError(null);
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        setError('Microphone permission denied');
+        Alert.alert(
+          'Permission Required',
+          'Microphone permission is required to record your voice. Please enable it in your device settings.'
+        );
+        return;
+      }
       
-      const language = optionsRef.current?.language || 'en-US';
+      // Check if Voice is available before starting
+      try {
+        const available = await Voice.isAvailable();
+        if (!available) {
+          setError('Speech recognition not available on this device');
+          console.warn('Speech recognition not available on this device');
+          return;
+        }
+      } catch (availabilityError) {
+        console.warn('Error checking Voice availability:', availabilityError);
+        // Continue anyway as this might be a false negative on some devices
+      }
       
-      await Voice.start(language, {
-        EXTRA_LANGUAGE_MODEL: 'LANGUAGE_MODEL_FREE_FORM',
-        EXTRA_CALLING_PACKAGE: 'com.interviewprep',
-        EXTRA_PARTIAL_RESULTS: optionsRef.current?.interimResults || true,
-        REQUEST_PERMISSIONS_AUTO: true,
-      });
-    } catch (error) {
-      console.error('Failed to start listening:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to start speech recognition';
-      setError(errorMsg);
-      setIsListening(false);
-      optionsRef.current?.onError?.(errorMsg);
+      await Voice.start(options?.language || 'en-US');
+    } catch (e) {
+      console.error('Error starting speech recognition:', e);
+      setError(`Failed to start: ${e}`);
+      Alert.alert(
+        'Speech Recognition Error',
+        'There was an error starting speech recognition. Please try again or use text input.'
+      );
+      
+      // Notify the parent component about the error
+      optionsRef.current?.onError?.(e);
     }
-  }, [isAvailable]);
+  }, [isListening, options?.language]);
 
   const stopListening = useCallback(async () => {
     try {
       await Voice.stop();
-    } catch (error) {
-      console.error('Failed to stop listening:', error);
-      // Don't treat stop errors as critical
-      setIsListening(false);
-    }
-  }, []);
-
-  const cancelListening = useCallback(async () => {
-    try {
-      await Voice.cancel();
-      setIsListening(false);
-      setTranscript('');
-    } catch (error) {
-      console.error('Failed to cancel listening:', error);
-      setIsListening(false);
+    } catch (e) {
+      console.error('Error stopping speech recognition:', e);
     }
   }, []);
 
   return {
     isListening,
     transcript,
-    volumeLevel,
     isAvailable,
+    volumeLevel,
     error,
     startListening,
     stopListening,
-    cancelListening
   };
 }
